@@ -9,14 +9,6 @@ from email.message import EmailMessage
 import pandas as pd
 
 
-def get_corr_sheets():
-    corr_sheets = []
-    for file_name in os.listdir(os.getcwd()):
-        if file_name[-14:] == "korrigiert.pdf":
-            corr_sheets.append(file_name)
-    return corr_sheets
-
-
 def send_mail(UNI_USER, UNI_ADDRESS, UNI_PW, sheet_no, df, df_indeces, filenames):
     for idx, df_idx in enumerate(df_indeces):
         mail = df.iloc[df_idx]["Stud.IP Benutzername"] + \
@@ -51,7 +43,7 @@ def send_mail(UNI_USER, UNI_ADDRESS, UNI_PW, sheet_no, df, df_indeces, filenames
             smtp.login(UNI_USER, UNI_PW)
             smtp.send_message(msg)
 
-        print("E-Mail to "+firstname+" ("+mail+") was sent succesfully.")
+        print("E-Mail to \""+firstname+"\" ("+mail+") was sent succesfully.")
 
 
 def main():
@@ -60,63 +52,66 @@ def main():
     UNI_PW = os.environ.get('UNI_PW')
 
     df = pd.read_csv("Punkteliste.csv", sep=";")
-    # ---------------------------------------------
+
     # FOR TESTING PURPOSES:
     # ---------------------------------------------
-    new_row = {
-        "Stud.IP Benutzername": "thesang.nguyen",
-        "Nachname": "Nguyen",
-        "Vorname": "The Sang",
-    }
-    new_row_2 = {
-        "Stud.IP Benutzername": "thesang.nguyen",
-        "Nachname": "Nguyen2",
-        "Vorname": "The Sang2",
-    }
-    new_row_3 = {
-        "Stud.IP Benutzername": "thesang.nguyen",
-        "Nachname": "Nguyen3",
-        "Vorname": "The Sang3",
-    }
-    df = df.append(new_row, ignore_index=True)
-    df = df.append(new_row_2, ignore_index=True)
-    df = df.append(new_row_3, ignore_index=True)
+    # new_row = {
+    #     "Stud.IP Benutzername": "thesang.nguyen",
+    #     "Nachname": "Nguyen",
+    #     "Vorname": "The Sang",
+    # }
+    # new_row_2 = {
+    #     "Stud.IP Benutzername": "thesang.nguyen",
+    #     "Nachname": "Nguyen",
+    #     "Vorname": "Doppelgänger",
+    # }
+    # df = df.append(new_row, ignore_index=True)
+    # df = df.append(new_row_2, ignore_index=True)
     # ---------------------------------------------
 
+    # duplicate surnames
     duplicate_names = list(df[df.duplicated("Nachname")]["Nachname"])
 
-    sheet_no = input("Homework Sheet No.: ")
+    sheet_no = input("Please enter sheet no.: ")
     if len(sheet_no) == 1:
         sheet_no = "0" + sheet_no
 
-    path = r"C:\Users\thesa\Desktop\AGLA1_Korrektur\Blatt"  # on windows
-    # path = "/mnt/c/Users/thesa/desktop/AGLA1_Korrektur/Blatt"  # on linux
+    path = r"C:\Users\thesa\Desktop\AGLA1_Korrektur\Blatt" + sheet_no
 
-    os.chdir(path + sheet_no)  # change into directory of given path
+    os.chdir(path)  # change into directory of given path
 
-    df_indeces = []
-    corr_sheets = get_corr_sheets()
+    # get list of filenames of corrected sheets
+    corr_sheets = [filename for filename in os.listdir(path)
+                   if filename[-14:] == "korrigiert.pdf"]
     print(f"There are {len(corr_sheets)} corrected sheets.")
+
+    df_indeces = []  # dataframe indeces of desired students/sheets
     filenames = [filename[:-15] for filename in corr_sheets]
-    corr_sheets_multiples = []
+    corr_sheets_with_rep = []  # corr_sheets with repetition of files as needed
     for idx, filename in enumerate(filenames):
+        # split filename into names of group members
         fn = filename.split(sep="_")
         for i in range(1, len(fn)):
-            corr_sheets_multiples.append(corr_sheets[idx])
+            # info: "corr_sheets" and "filenames" share same index for same files
+            corr_sheets_with_rep.append(corr_sheets[idx])
             if fn[i] in duplicate_names:
                 options = list(df.loc[df["Nachname"] == fn[i]]["Vorname"])
-                opt = input(
-                    f"There are two {fn[i]}s.\
-                    \nDo you mean {options[0]} [0] or {options[1]} [1]? "
-                )
-                opt = int(opt)
+                length = len(options)
+
+                prompt = f"There are {length} {fn[i]}s.\
+                    \nDo you mean {options[0]} [0]"
+                for j in range(1, length):
+                    prompt += f" or {options[j]} [{j}]"
+                prompt += "? "
+
+                opt = int(input(prompt))
                 df_indeces.append(
-                    df.loc[df["Vorname"] == options[opt]].index[0])
+                    df.loc[df["Nachname"] == fn[i]].loc[df["Vorname"] == options[opt]].index[0])
             else:
                 df_indeces.append(df.loc[df["Nachname"] == fn[i]].index[0])
 
     send_mail(UNI_USER, UNI_ADDRESS, UNI_PW,
-              sheet_no, df, df_indeces, corr_sheets_multiples)
+              sheet_no, df, df_indeces, corr_sheets_with_rep)
 
 
 if __name__ == "__main__":
