@@ -1,11 +1,27 @@
-# Code by The Sang Nguyen inspired by Corey Schafer's Tutorial:
+# Author: The Sang Nguyen
+#
+# Inspired by Corey Schafer's Tutorial:
 # https://www.youtube.com/watch?v=JRCJ6RtE3xU
 #
 # Written for Windows
 
+"""
+This script automates the delivery of corrected homework sheets by
+- reading csv-file containing all names and e-mail addresses
+- changing into directory with corrected sheets
+- reading corrected sheets of the form
+    "XX_surname_korrigiert.pdf" or 
+    "XX_surname_surname2_korrigiert.pdf" or 
+    "XX_surname_surname2_surname3_korrigiert.pdf"
+- sending them by e-mail via SMTP
+"""
+
+# built-in modules
 import os
 import smtplib
 from email.message import EmailMessage
+
+# third-party modules
 import pandas as pd
 
 
