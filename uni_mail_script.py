@@ -16,8 +16,13 @@ This script automates the delivery of corrected homework sheets by
 - sending them by e-mail via SMTP
 
 SET UP:
-Save this script in a directory together with "Punkteliste.csv" and a 
-folder with name "BlattXX" containing the corrected sheets (of the forms above).
+1 - Save this script in a directory together with "Punkteliste.csv" (containing 
+all names and e-mail addresses) and a folder with name "BlattXX" containing 
+the corrected sheets (of the forms above).
+2 - main(): Adjust "path" (according to your OS) and your login data 
+"UNI_USER", "UNI_ADDRESS" and "UNI_PW". It is recommended to use environment 
+variables instead of clear text.
+3 - send_mail(): Adjust e-mail text.
 """
 
 # built-in modules
@@ -71,26 +76,26 @@ def send_mail(UNI_USER, UNI_ADDRESS, UNI_PW, sheet_no, df, df_indeces, filenames
 
 
 def main():
-    UNI_USER = os.environ.get('UNI_USER')
-    UNI_ADDRESS = os.environ.get('UNI_ADDRESS')
-    UNI_PW = os.environ.get('UNI_PW')
+    UNI_USER = os.environ.get('UNI_USER')  # "ug-student\firstname.surname"
+    UNI_ADDRESS = os.environ.get('UNI_ADDRESS')  # ecampus e-mail address
+    UNI_PW = os.environ.get('UNI_PW')  # password
 
     df = pd.read_csv("Punkteliste.csv", sep=";")
 
     # FOR TESTING PURPOSES:
     # ---------------------------------------------
-    new_row = {
-        "Stud.IP Benutzername": "thesang.nguyen",
-        "Nachname": "Nguyen",
-        "Vorname": "The Sang",
-    }
-    new_row_2 = {
-        "Stud.IP Benutzername": "thesang.nguyen",
-        "Nachname": "Nguyen",
-        "Vorname": "Doppelgänger",
-    }
-    df = df.append(new_row, ignore_index=True)
-    df = df.append(new_row_2, ignore_index=True)
+    # new_row = {
+    #     "Stud.IP Benutzername": "thesang.nguyen",
+    #     "Nachname": "Nguyen",
+    #     "Vorname": "The Sang",
+    # }
+    # new_row_2 = {
+    #     "Stud.IP Benutzername": "thesang.nguyen",
+    #     "Nachname": "Nguyen",
+    #     "Vorname": "Doppelgänger",
+    # }
+    # df = df.append(new_row, ignore_index=True)
+    # df = df.append(new_row_2, ignore_index=True)
     # ---------------------------------------------
 
     # duplicate surnames
