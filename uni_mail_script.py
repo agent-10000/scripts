@@ -1,9 +1,9 @@
+# BEFORE EXECUTION: adjust "path" according to your operating system
+#
 # Author: The Sang Nguyen
 #
 # Inspired by Corey Schafer's Tutorial:
 # https://www.youtube.com/watch?v=JRCJ6RtE3xU
-#
-# Written for Windows
 
 """
 This script automates the delivery of corrected homework sheets by
@@ -14,6 +14,10 @@ This script automates the delivery of corrected homework sheets by
     "XX_surname_surname2_korrigiert.pdf" or 
     "XX_surname_surname2_surname3_korrigiert.pdf"
 - sending them by e-mail via SMTP
+
+SET UP:
+Save this script in a directory together with "Punkteliste.csv" and a 
+folder with name "BlattXX" containing the corrected sheets (of the forms above).
 """
 
 # built-in modules
@@ -30,6 +34,7 @@ def send_mail(UNI_USER, UNI_ADDRESS, UNI_PW, sheet_no, df, df_indeces, filenames
         mail = df.iloc[df_idx]["Stud.IP Benutzername"] + \
             "@stud.uni-goettingen.de"
         firstname = df.iloc[df_idx]["Vorname"]
+        surname = df.iloc[df_idx]["Nachname"]
 
         msg = EmailMessage()
         msg["Subject"] = "AGLA1 Blatt " + sheet_no + " Korrektur"
@@ -39,7 +44,9 @@ def send_mail(UNI_USER, UNI_ADDRESS, UNI_PW, sheet_no, df, df_indeces, filenames
             f"Hallo {firstname},\
             \n\nanbei findest Du deinen korrigierten Zettel.\
             \n\nViele Grüße,\
-            \nSang"
+            \nSang\
+            \n\nBrought to you by a Platypus Inc.\
+            \nhttps://github.com/agent-10000"
         )
 
         with open(filenames[idx], "rb") as f:
@@ -59,7 +66,8 @@ def send_mail(UNI_USER, UNI_ADDRESS, UNI_PW, sheet_no, df, df_indeces, filenames
             smtp.login(UNI_USER, UNI_PW)
             smtp.send_message(msg)
 
-        print("E-Mail to \""+firstname+"\" ("+mail+") was sent succesfully.")
+        print("E-Mail to \""+surname+", "+firstname +
+              "\" ("+mail+") was sent succesfully.")
 
 
 def main():
@@ -71,18 +79,18 @@ def main():
 
     # FOR TESTING PURPOSES:
     # ---------------------------------------------
-    # new_row = {
-    #     "Stud.IP Benutzername": "thesang.nguyen",
-    #     "Nachname": "Nguyen",
-    #     "Vorname": "The Sang",
-    # }
-    # new_row_2 = {
-    #     "Stud.IP Benutzername": "thesang.nguyen",
-    #     "Nachname": "Nguyen",
-    #     "Vorname": "Doppelgänger",
-    # }
-    # df = df.append(new_row, ignore_index=True)
-    # df = df.append(new_row_2, ignore_index=True)
+    new_row = {
+        "Stud.IP Benutzername": "thesang.nguyen",
+        "Nachname": "Nguyen",
+        "Vorname": "The Sang",
+    }
+    new_row_2 = {
+        "Stud.IP Benutzername": "thesang.nguyen",
+        "Nachname": "Nguyen",
+        "Vorname": "Doppelgänger",
+    }
+    df = df.append(new_row, ignore_index=True)
+    df = df.append(new_row_2, ignore_index=True)
     # ---------------------------------------------
 
     # duplicate surnames
@@ -92,7 +100,11 @@ def main():
     if len(sheet_no) == 1:
         sheet_no = "0" + sheet_no
 
-    path = r"C:\Users\thesa\Desktop\AGLA1_Korrektur\Blatt" + sheet_no
+    # ADJUST path according to your os
+    path = os.getcwd()
+    # path += r"\Blatt"  # for Windows
+    path += "/Blatt"  # for Linux
+    path += sheet_no
 
     os.chdir(path)  # change into directory of given path
 
