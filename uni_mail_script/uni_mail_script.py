@@ -68,7 +68,7 @@ def send_mail(UNI_USER, UNI_ADDRESS, UNI_PW,
         smtp.send_message(msg)
 
     print("E-Mail to \""+surname+", "+firstname +
-          "\" ("+email+") was sent succesfully.")  # terminal prompt to see process
+          "\" ("+email+") was sent succesfully.")
 
 
 def main():
@@ -80,18 +80,18 @@ def main():
 
     # FOR TESTING PURPOSES:
     # ---------------------------------------------
-    new_row = {
-        "Stud.IP Benutzername": "thesang.nguyen",
-        "Nachname": "Nguyen",
-        "Vorname": "The Sang",
-    }
-    new_row_2 = {
-        "Stud.IP Benutzername": "thesang.nguyen",
-        "Nachname": "Nguyen",
-        "Vorname": "Doppelgänger",
-    }
-    df = df.append(new_row, ignore_index=True)
-    df = df.append(new_row_2, ignore_index=True)
+    # new_row = {
+    #     "Stud.IP Benutzername": "thesang.nguyen",
+    #     "Nachname": "Nguyen",
+    #     "Vorname": "The Sang",
+    # }
+    # new_row_2 = {
+    #     "Stud.IP Benutzername": "thesang.nguyen",
+    #     "Nachname": "Nguyen",
+    #     "Vorname": "Doppelgänger",
+    # }
+    # df = df.append(new_row, ignore_index=True)
+    # df = df.append(new_row_2, ignore_index=True)
     # ---------------------------------------------
 
     # duplicate surnames
@@ -116,31 +116,31 @@ def main():
     print(f"There are {len(corr_sheets)} corrected sheets.")
 
     for idx, names in enumerate(names_in_filenames):
+        print(names)
         # split "names" into names of group members
         for name in names.split(sep="_"):
             if name in duplicate_names:
                 options = list(df.loc[df["Nachname"] == name]["Vorname"])
-                length = len(options)
 
-                prompt = f"There are {length} {name}s.\
+                prompt = f"There are {len(options)} {name}s.\
                     \nDo you mean {options[0]} [0]"
-                for k in range(1, length):
+                for k in range(1, len(options)):
                     prompt += f" or {options[k]} [{k}]"
                 prompt += "? "
                 opt = int(input(prompt))
 
                 # unlike "Nachname" the dataframe index is unique
-                df_idx = df.loc[df["Nachname"] == name
-                                ].loc[df["Vorname"] == options[opt]].index[0]
+                df_idx = df.loc[df["Nachname"] == name]\
+                    .loc[df["Vorname"] == options[opt]].index[0]
             else:
                 df_idx = df.loc[df["Nachname"] == name].index[0]
 
-            email = df.iloc[df_idx]["Stud.IP Benutzername"] + \
-                "@stud.uni-goettingen.de"
-            firstname = df.iloc[df_idx]["Vorname"]
-            surname = df.iloc[df_idx]["Nachname"]
+            dd = df.iloc[df_idx]
+            email = dd["Stud.IP Benutzername"] + "@stud.uni-goettingen.de"
+            firstname = dd["Vorname"]
+            surname = dd["Nachname"]
 
-            # "corr_sheets" and "names_in_files" share same index of same files
+            # "corr_sheets" and "names_in_files" share same index of same file
             send_mail(UNI_USER, UNI_ADDRESS, UNI_PW,
                       email, firstname, surname, sheet_no, corr_sheets[idx])
 
