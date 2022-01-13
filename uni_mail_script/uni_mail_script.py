@@ -17,7 +17,7 @@ This script automates the delivery of corrected homework sheets by
 
 SET UP:
 1 - Save this script in a directory together with "Punkteliste.csv" (containing 
-all names and e-mail addresses) and a folder with name "BlattXX" containing 
+all names and e-mail addresses) and a folder with names "BlattXX" containing 
 the corrected sheets (of the forms above).
 2 - main(): Adjust "path" (according to your OS) and your login data 
 "UNI_USER", "UNI_ADDRESS" and "UNI_PW". It is recommended to use environment 
@@ -67,9 +67,8 @@ def send_mail(UNI_USER, UNI_ADDRESS, UNI_PW,
         smtp.login(UNI_USER, UNI_PW)
         smtp.send_message(msg)
 
-    # terminal prompt to see process
     print("E-Mail to \""+surname+", "+firstname +
-          "\" ("+email+") was sent succesfully.")
+          "\" ("+email+") was sent succesfully.")  # terminal prompt to see process
 
 
 def main():
@@ -113,40 +112,37 @@ def main():
     # get list of filenames of corrected sheets
     corr_sheets = [filename for filename in os.listdir(path)
                    if filename[-14:] == "korrigiert.pdf"]
+    names_in_filenames = [filename[3:-15] for filename in corr_sheets]
     print(f"There are {len(corr_sheets)} corrected sheets.")
 
-    df_indeces = []  # dataframe indeces of desired students/sheets
-    filenames = [filename[:-15] for filename in corr_sheets]
-    corr_sheets_with_rep = []  # corr_sheets with repetition of files as needed
-    for idx, filename in enumerate(filenames):
-        # split filename into names of group members
-        fn = filename.split(sep="_")
-        for i in range(1, len(fn)):
-            # info: "corr_sheets" and "filenames" share same index for same files
-            corr_sheets_with_rep.append(corr_sheets[idx])
-            if fn[i] in duplicate_names:
-                options = list(df.loc[df["Nachname"] == fn[i]]["Vorname"])
+    for idx, names in enumerate(names_in_filenames):
+        # split "names" into names of group members
+        for name in names.split(sep="_"):
+            if name in duplicate_names:
+                options = list(df.loc[df["Nachname"] == name]["Vorname"])
                 length = len(options)
 
-                prompt = f"There are {length} {fn[i]}s.\
+                prompt = f"There are {length} {name}s.\
                     \nDo you mean {options[0]} [0]"
-                for j in range(1, length):
-                    prompt += f" or {options[j]} [{j}]"
+                for k in range(1, length):
+                    prompt += f" or {options[k]} [{k}]"
                 prompt += "? "
-
                 opt = int(input(prompt))
-                df_indeces.append(
-                    df.loc[df["Nachname"] == fn[i]].loc[df["Vorname"] == options[opt]].index[0])
-            else:
-                df_indeces.append(df.loc[df["Nachname"] == fn[i]].index[0])
 
-    for idx, df_idx in enumerate(df_indeces):
-        email = df.iloc[df_idx]["Stud.IP Benutzername"] + \
-            "@stud.uni-goettingen.de"
-        firstname = df.iloc[df_idx]["Vorname"]
-        surname = df.iloc[df_idx]["Nachname"]
-        send_mail(UNI_USER, UNI_ADDRESS, UNI_PW,
-                  email, firstname, surname, sheet_no, corr_sheets_with_rep[idx])
+                # unlike "Nachname" the dataframe index is unique
+                df_idx = df.loc[df["Nachname"] == name
+                                ].loc[df["Vorname"] == options[opt]].index[0]
+            else:
+                df_idx = df.loc[df["Nachname"] == name].index[0]
+
+            email = df.iloc[df_idx]["Stud.IP Benutzername"] + \
+                "@stud.uni-goettingen.de"
+            firstname = df.iloc[df_idx]["Vorname"]
+            surname = df.iloc[df_idx]["Nachname"]
+
+            # "corr_sheets" and "names_in_files" share same index of same files
+            send_mail(UNI_USER, UNI_ADDRESS, UNI_PW,
+                      email, firstname, surname, sheet_no, corr_sheets[idx])
 
 
 if __name__ == "__main__":
