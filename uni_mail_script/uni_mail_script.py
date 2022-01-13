@@ -34,45 +34,42 @@ from email.message import EmailMessage
 import pandas as pd
 
 
-def send_mail(UNI_USER, UNI_ADDRESS, UNI_PW, sheet_no, df, df_indeces, filenames):
-    for idx, df_idx in enumerate(df_indeces):
-        mail = df.iloc[df_idx]["Stud.IP Benutzername"] + \
-            "@stud.uni-goettingen.de"
-        firstname = df.iloc[df_idx]["Vorname"]
-        surname = df.iloc[df_idx]["Nachname"]
-
-        msg = EmailMessage()
-        msg["Subject"] = "AGLA1 Blatt " + sheet_no + " Korrektur"
-        msg["From"] = UNI_ADDRESS
-        msg["To"] = mail
-        msg.set_content(
-            f"Hallo {firstname},\
+def send_mail(UNI_USER, UNI_ADDRESS, UNI_PW,
+              email, firstname, surname, sheet_no, filename):
+    msg = EmailMessage()
+    msg["Subject"] = "AGLA1 Blatt " + sheet_no + " Korrektur"
+    msg["From"] = UNI_ADDRESS
+    msg["To"] = email
+    msg.set_content(
+        f"Hallo {firstname},\
             \n\nanbei findest Du deinen korrigierten Zettel.\
             \n\nViele Grüße,\
             \nSang\
-            \n\nBrought to you by a Platypus Inc.\
+            \n\nBrought to you by Platypus Inc.\
             \nhttps://github.com/agent-10000"
-        )
+    )
 
-        with open(filenames[idx], "rb") as f:
-            file_data = f.read()
-            file_name = f.name
+    with open(filename, "rb") as f:
+        file_data = f.read()
+        file_name = f.name
 
-        msg.add_attachment(
-            file_data,
-            maintype="application",
-            subtype="octet-stream",
-            filename=file_name,
-        )
+    msg.add_attachment(
+        file_data,
+        maintype="application",  # for PDFs
+        subtype="octet-stream",  # for PDFs
+        filename=file_name,
+    )
 
-        with smtplib.SMTP('email.stud.uni-goettingen.de', 587) as smtp:
-            smtp.ehlo()
-            smtp.starttls()
-            smtp.login(UNI_USER, UNI_PW)
-            smtp.send_message(msg)
+    with smtplib.SMTP('email.stud.uni-goettingen.de', 587) as smtp:
+        smtp.ehlo()
+        smtp.starttls()
+        smtp.ehlo()
+        smtp.login(UNI_USER, UNI_PW)
+        smtp.send_message(msg)
 
-        print("E-Mail to \""+surname+", "+firstname +
-              "\" ("+mail+") was sent succesfully.")
+    # terminal prompt to see process
+    print("E-Mail to \""+surname+", "+firstname +
+          "\" ("+email+") was sent succesfully.")
 
 
 def main():
@@ -84,18 +81,18 @@ def main():
 
     # FOR TESTING PURPOSES:
     # ---------------------------------------------
-    # new_row = {
-    #     "Stud.IP Benutzername": "thesang.nguyen",
-    #     "Nachname": "Nguyen",
-    #     "Vorname": "The Sang",
-    # }
-    # new_row_2 = {
-    #     "Stud.IP Benutzername": "thesang.nguyen",
-    #     "Nachname": "Nguyen",
-    #     "Vorname": "Doppelgänger",
-    # }
-    # df = df.append(new_row, ignore_index=True)
-    # df = df.append(new_row_2, ignore_index=True)
+    new_row = {
+        "Stud.IP Benutzername": "thesang.nguyen",
+        "Nachname": "Nguyen",
+        "Vorname": "The Sang",
+    }
+    new_row_2 = {
+        "Stud.IP Benutzername": "thesang.nguyen",
+        "Nachname": "Nguyen",
+        "Vorname": "Doppelgänger",
+    }
+    df = df.append(new_row, ignore_index=True)
+    df = df.append(new_row_2, ignore_index=True)
     # ---------------------------------------------
 
     # duplicate surnames
@@ -107,8 +104,8 @@ def main():
 
     # ADJUST path according to your os
     path = os.getcwd()
-    # path += r"\Blatt"  # for Windows
-    path += "/Blatt"  # for Linux
+    path += r"\Blatt"  # for Windows
+    # path += "/Blatt"  # for Linux
     path += sheet_no
 
     os.chdir(path)  # change into directory of given path
@@ -143,8 +140,13 @@ def main():
             else:
                 df_indeces.append(df.loc[df["Nachname"] == fn[i]].index[0])
 
-    send_mail(UNI_USER, UNI_ADDRESS, UNI_PW,
-              sheet_no, df, df_indeces, corr_sheets_with_rep)
+    for idx, df_idx in enumerate(df_indeces):
+        email = df.iloc[df_idx]["Stud.IP Benutzername"] + \
+            "@stud.uni-goettingen.de"
+        firstname = df.iloc[df_idx]["Vorname"]
+        surname = df.iloc[df_idx]["Nachname"]
+        send_mail(UNI_USER, UNI_ADDRESS, UNI_PW,
+                  email, firstname, surname, sheet_no, corr_sheets_with_rep[idx])
 
 
 if __name__ == "__main__":
