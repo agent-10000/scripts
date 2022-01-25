@@ -1,5 +1,3 @@
-# BEFORE EXECUTION: adjust "path" according to your operating system
-#
 # Author: The Sang Nguyen
 #
 # Inspired by Corey Schafer's Tutorial:
@@ -19,14 +17,14 @@ SET UP:
 1 - Save this script in a directory together with "Punkteliste.csv" (containing
 all names and e-mail addresses) and a folder with names "BlattXX" containing
 the corrected sheets (of the forms above).
-2 - main(): Adjust "path" (according to your OS) and your login data
-"UNI_USER", "UNI_ADDRESS" and "UNI_PW". It is recommended to use environment
-variables instead of clear text.
+2 - main(): Adjust login data "UNI_USER", "UNI_ADDRESS" and "UNI_PW". It is 
+recommended to use environment variables instead of clear text.
 3 - send_mail(): Adjust e-mail text.
 """
 
 # built-in modules
 import os
+import sys
 import smtplib
 from email.message import EmailMessage
 
@@ -103,14 +101,20 @@ def main():
     # duplicate surnames
     duplicate_names = list(df[df.duplicated("Nachname")]["Nachname"])
 
+    path = os.getcwd()
+    if sys.platform.startswith('win32'):
+        path += r"\Blatt"
+    elif sys.platform.startswith('linux'):
+        path += "/Blatt"
+    elif sys.platform.startswith('darwin'):  # for macOS
+        path += "/Blatt"  # not sure if script runs on macOS though LOL
+    else:
+        raise OSError('this script does not support your OS')
+
     sheet_no = input("++++ Please enter sheet no.: ")
     if len(sheet_no) == 1:
         sheet_no = "0" + sheet_no
 
-    # ADJUST path according to your os
-    path = os.getcwd()
-    path += r"\Blatt"  # for Windows
-    # path += "/Blatt"  # for Linux
     path += sheet_no
 
     os.chdir(path)  # change into directory of given path
