@@ -10,17 +10,17 @@ This script automates the delivery of corrected homework sheets by
 - reading csv-file containing all names and e-mail addresses
 - changing into directory with corrected sheets
 - reading corrected sheets of the form
-    "XX_surname_korrigiert.pdf" or 
-    "XX_surname_surname2_korrigiert.pdf" or 
+    "XX_surname_korrigiert.pdf" or
+    "XX_surname_surname2_korrigiert.pdf" or
     "XX_surname_surname2_surname3_korrigiert.pdf"
 - sending them by e-mail via SMTP
 
 SET UP:
-1 - Save this script in a directory together with "Punkteliste.csv" (containing 
-all names and e-mail addresses) and a folder with names "BlattXX" containing 
+1 - Save this script in a directory together with "Punkteliste.csv" (containing
+all names and e-mail addresses) and a folder with names "BlattXX" containing
 the corrected sheets (of the forms above).
-2 - main(): Adjust "path" (according to your OS) and your login data 
-"UNI_USER", "UNI_ADDRESS" and "UNI_PW". It is recommended to use environment 
+2 - main(): Adjust "path" (according to your OS) and your login data
+"UNI_USER", "UNI_ADDRESS" and "UNI_PW". It is recommended to use environment
 variables instead of clear text.
 3 - send_mail(): Adjust e-mail text.
 """
@@ -41,12 +41,10 @@ def send_mail(UNI_USER, UNI_ADDRESS, UNI_PW,
     msg["From"] = UNI_ADDRESS
     msg["To"] = email
     msg.set_content(
-        f"Hallo {firstname},\
-            \n\nanbei findest Du deinen korrigierten Zettel.\
-            \n\nViele Grüße,\
-            \nSang\
-            \n\nBrought to you by Platypus Inc.\
-            \nhttps://github.com/agent-10000"
+        f"Hallo {firstname},\n\n" +
+        "anbei findest Du deinen korrigierten Zettel.\n\n" +
+        "Viele Grüße,\n" +
+        "Sang"
     )
 
     with open(filename, "rb") as f:
@@ -67,8 +65,10 @@ def send_mail(UNI_USER, UNI_ADDRESS, UNI_PW,
         smtp.login(UNI_USER, UNI_PW)
         smtp.send_message(msg)
 
-    print("E-Mail to \""+surname+", "+firstname +
-          "\" ("+email+") was sent succesfully.")
+    print(
+        f"|    +--- E-Mail to \"{surname}, {firstname}\" was sent succesfully.\n" +
+        f"|         ({email})"
+    )
 
 
 def main():
@@ -80,24 +80,30 @@ def main():
 
     # FOR TESTING PURPOSES:
     # ---------------------------------------------
-    # new_row = {
-    #     "Stud.IP Benutzername": "thesang.nguyen",
-    #     "Nachname": "Nguyen",
-    #     "Vorname": "The Sang",
-    # }
+    new_row = {
+        "Stud.IP Benutzername": "thesang.nguyen",
+        "Nachname": "Nguyen",
+        "Vorname": "The Sang",
+    }
     # new_row_2 = {
     #     "Stud.IP Benutzername": "thesang.nguyen",
     #     "Nachname": "Nguyen",
     #     "Vorname": "Doppelgänger",
     # }
-    # df = df.append(new_row, ignore_index=True)
+    # new_row_3 = {
+    #     "Stud.IP Benutzername": "thesang.nguyen",
+    #     "Nachname": "Nguyen2",
+    #     "Vorname": "Doppelgänger2",
+    # }
+    df = df.append(new_row, ignore_index=True)
     # df = df.append(new_row_2, ignore_index=True)
+    # df = df.append(new_row_3, ignore_index=True)
     # ---------------------------------------------
 
     # duplicate surnames
     duplicate_names = list(df[df.duplicated("Nachname")]["Nachname"])
 
-    sheet_no = input("Please enter sheet no.: ")
+    sheet_no = input("++++ Please enter sheet no.: ")
     if len(sheet_no) == 1:
         sheet_no = "0" + sheet_no
 
@@ -113,36 +119,50 @@ def main():
     corr_sheets = [filename for filename in os.listdir(path)
                    if filename[-14:] == "korrigiert.pdf"]
     names_in_filenames = [filename[3:-15] for filename in corr_sheets]
-    print(f"There are {len(corr_sheets)} corrected sheets.")
+    print(f"+--- There are {len(corr_sheets)} corrected sheets.")
 
+    unknown = []  # names not found in database during following search
     for idx, names in enumerate(names_in_filenames):
-        print(names)
         # split "names" into names of group members
-        for name in names.split(sep="_"):
+        names = names.split(sep="_")
+        print(f"+--- Handling file {idx+1} from:", *names)
+        for name in names:
+            dd = df.loc[df["Nachname"] == name]
             if name in duplicate_names:
-                options = list(df.loc[df["Nachname"] == name]["Vorname"])
+                options = list(dd["Vorname"])
 
-                prompt = f"There are {len(options)} {name}s.\
-                    \nDo you mean {options[0]} [0]"
+                prompt = f"++++ There are {len(options)} {name}s.\
+                    \n|    Do you mean {options[0]} [0]"
                 for k in range(1, len(options)):
                     prompt += f" or {options[k]} [{k}]"
                 prompt += "? "
                 opt = int(input(prompt))
 
                 # unlike "Nachname" the dataframe index is unique
-                df_idx = df.loc[df["Nachname"] == name]\
-                    .loc[df["Vorname"] == options[opt]].index[0]
+                dd = dd.loc[df["Vorname"] == options[opt]]
+
+            try:
+                df_idx = dd.index[0]
+            except IndexError:
+                unknown.append(name)
+                print(
+                    '+--- UNICODE ERROR:' +
+                    f'\n|    Name "{name}" not found in database (possibly due to weird Umlaut-formats)' +
+                    '\n|    +-- possible SOLUTIONS: retype filename on PC or change name in database'
+                )
+                continue
             else:
-                df_idx = df.loc[df["Nachname"] == name].index[0]
+                dd = df.iloc[df_idx]
+                email = dd["Stud.IP Benutzername"] + "@stud.uni-goettingen.de"
+                firstname = dd["Vorname"]
+                surname = dd["Nachname"]
 
-            dd = df.iloc[df_idx]
-            email = dd["Stud.IP Benutzername"] + "@stud.uni-goettingen.de"
-            firstname = dd["Vorname"]
-            surname = dd["Nachname"]
+                # "corr_sheets" and "names_in_files" share same index of same file
+                send_mail(UNI_USER, UNI_ADDRESS, UNI_PW,
+                          email, firstname, surname, sheet_no, corr_sheets[idx])
 
-            # "corr_sheets" and "names_in_files" share same index of same file
-            send_mail(UNI_USER, UNI_ADDRESS, UNI_PW,
-                      email, firstname, surname, sheet_no, corr_sheets[idx])
+    if unknown:
+        print('+--- ATTENTION: following names were NOT found:', *unknown)
 
 
 if __name__ == "__main__":
